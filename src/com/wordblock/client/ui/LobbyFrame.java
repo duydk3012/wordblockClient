@@ -22,8 +22,9 @@ public class LobbyFrame extends JFrame {
 
     private final JLabel lblWelcome = new JLabel();
     private final JButton btnRefresh = new JButton("🔄 Refresh");
-    private final JButton btnChangePass = new JButton("Change Password");
-    private final JButton btnLogout = new JButton("Logout");
+    private final JButton btnChangePass = new JButton("🔑 Change Password");
+    private final JButton btnHistory = new JButton("📜 Match History");
+    private final JButton btnLogout = new JButton("🚪 Logout");
 
     public LobbyFrame(NetworkClient net, String username) {
         super("WordBlock – Lobby (" + username + ")");
@@ -36,31 +37,34 @@ public class LobbyFrame extends JFrame {
         setLocationRelativeTo(null);
         setLayout(new BorderLayout(10, 10));
 
+        Font emojiFont = new Font("Segoe UI Emoji", Font.PLAIN, 14);
+
         // === Header ===
-        lblWelcome.setText("Hello, " + username + "!");
-        lblWelcome.setFont(new Font("Segoe UI Emoji", Font.BOLD, 14));
+        lblWelcome.setText("👋 Hello, " + username + "!");
+        lblWelcome.setFont(new Font("Segoe UI Emoji", Font.BOLD, 15));
 
         JPanel top = new JPanel(new BorderLayout());
         top.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
         top.add(lblWelcome, BorderLayout.WEST);
 
         JPanel rightButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
-        rightButtons.add(btnChangePass);
-        rightButtons.add(btnRefresh);
-        rightButtons.add(btnLogout);
+        for (JButton b : new JButton[]{btnRefresh, btnHistory, btnChangePass, btnLogout}) {
+            b.setFont(emojiFont);
+            rightButtons.add(b);
+        }
         top.add(rightButtons, BorderLayout.EAST);
         add(top, BorderLayout.NORTH);
 
         // === Leaderboard (left) ===
         JPanel leftPanel = new JPanel(new BorderLayout());
         leftPanel.setBorder(BorderFactory.createTitledBorder("🏆 Leaderboard"));
-        lstRank.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        lstRank.setFont(emojiFont);
         leftPanel.add(new JScrollPane(lstRank), BorderLayout.CENTER);
 
         // === Online users (right) ===
         JPanel rightPanel = new JPanel(new BorderLayout());
         rightPanel.setBorder(BorderFactory.createTitledBorder("💬 Online Players"));
-        lstOnline.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 13));
+        lstOnline.setFont(emojiFont);
         rightPanel.add(new JScrollPane(lstOnline), BorderLayout.CENTER);
 
         // === Split panels ===
@@ -68,7 +72,7 @@ public class LobbyFrame extends JFrame {
         split.setDividerLocation(350);
         add(split, BorderLayout.CENTER);
 
-        // === Buttons events ===
+        // === Button actions ===
         btnRefresh.addActionListener(e -> {
             net.send("list_online", Map.of());
             net.send("leaderboard_request", Map.of());
@@ -86,12 +90,12 @@ public class LobbyFrame extends JFrame {
                 new LoginFrame().setVisible(true);
             }
         });
-        
-        btnChangePass.addActionListener(e -> {
-            new ChangePwFrame(net).setVisible(true);
-        });
 
-        // Double-click to send challenge
+        btnChangePass.addActionListener(e -> new ChangePwFrame(net).setVisible(true));
+
+        btnHistory.addActionListener(e -> net.send(Map.of("type", "match_history", "payload", Map.of())));
+
+        // === Double-click on online list to challenge ===
         lstOnline.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -99,16 +103,21 @@ public class LobbyFrame extends JFrame {
                     String selected = lstOnline.getSelectedValue();
                     if (selected == null) return;
 
-                    // Extract name from "alice (Online)"
+                    // Extract player name from "Alice (Online)"
                     String target = selected.split(" ")[0].trim();
                     if (target.equalsIgnoreCase(username)) {
-                        JOptionPane.showMessageDialog(LobbyFrame.this, "You cannot challenge yourself!");
+                        JOptionPane.showMessageDialog(LobbyFrame.this, "⚠️ You cannot challenge yourself!");
+                        return;
+                    }
+
+                    if (selected.contains("🎮 Playing")) {
+                        JOptionPane.showMessageDialog(LobbyFrame.this, "⏳ That player is currently in a match!");
                         return;
                     }
 
                     int opt = JOptionPane.showConfirmDialog(
                             LobbyFrame.this,
-                            "Do you want to challenge " + target + "?",
+                            "🎯 Do you want to challenge " + target + "?",
                             "Challenge Player",
                             JOptionPane.YES_NO_OPTION
                     );
@@ -118,7 +127,7 @@ public class LobbyFrame extends JFrame {
             }
         });
 
-        // === Register callback from server ===
+        // === Register server callback ===
         net.setOnMessage(this::onServer);
 
         // === Initial requests ===
@@ -146,6 +155,7 @@ public class LobbyFrame extends JFrame {
                             String display = switch (status) {
                                 case "Playing" -> name + " (🎮 Playing)";
                                 case "Online" -> name + " (🟢 Online)";
+                                case "Offline" -> name + " (⚫ Offline)";
                                 default -> name + " (" + status + ")";
                             };
                             onlineModel.addElement(display);
@@ -160,7 +170,7 @@ public class LobbyFrame extends JFrame {
                             JsonObject u = el.getAsJsonObject();
                             String name = u.get("username").getAsString();
                             int pts = u.get("points").getAsInt();
-                            rankModel.addElement(rank++ + ". " + name + " – " + pts + " pts");
+                            rankModel.addElement("🏅 " + rank++ + ". " + name + " – " + pts + " pts");
                         }
                     }
 
@@ -172,7 +182,7 @@ public class LobbyFrame extends JFrame {
                         String from = payload.get("from").getAsString();
                         int opt = JOptionPane.showConfirmDialog(
                                 this,
-                                "You have received a challenge from " + from + ". Accept?",
+                                "🎮 You have received a challenge from " + from + ".\nDo you want to accept?",
                                 "Game Invitation",
                                 JOptionPane.YES_NO_OPTION
                         );
@@ -185,11 +195,11 @@ public class LobbyFrame extends JFrame {
                     case "invite_result" -> {
                         boolean ok = payload.get("success").getAsBoolean();
                         if (!ok)
-                            JOptionPane.showMessageDialog(this, "Failed to send challenge!");
+                            JOptionPane.showMessageDialog(this, "❌ Failed to send challenge!");
                     }
 
                     case "invite_rejected" ->
-                            JOptionPane.showMessageDialog(this, "Your invitation was rejected!");
+                            JOptionPane.showMessageDialog(this, "🚫 Your invitation was rejected!");
 
                     case "match_start" -> {
                         String roomId = payload.get("roomId").getAsString();
@@ -199,6 +209,27 @@ public class LobbyFrame extends JFrame {
 
                         new GameFrame(net, username, opp, roomId, letters, duration).setVisible(true);
                         dispose();
+                    }
+
+                    case "match_history_result" -> {
+                        boolean success = payload.get("success").getAsBoolean();
+                        if (!success) {
+                            JOptionPane.showMessageDialog(this, "⚠️ Failed to load match history!");
+                            return;
+                        }
+
+                        var matchesArray = payload.getAsJsonArray("matches");
+                        java.lang.reflect.Type listType =
+                                new com.google.gson.reflect.TypeToken<java.util.List<java.util.Map<String, Object>>>() {}.getType();
+                        java.util.List<java.util.Map<String, Object>> matches =
+                                new Gson().fromJson(matchesArray, listType);
+
+                        new MatchHistoryFrame(matches).setVisible(true);
+                    }
+
+                    case "status_update" -> {
+                        net.send("list_online", Map.of());
+                        net.send("leaderboard_request", Map.of());
                     }
                 }
 
