@@ -49,6 +49,11 @@ public class LoginFrame extends JFrame {
         };
         bgPanel.setLayout(new GridBagLayout());
 
+        JLabel title = new JLabel("WORD BLOCK");
+        title.setFont(new Font("Segoe UI Black", Font.BOLD, 26));
+        title.setForeground(Color.BLACK);
+        title.setHorizontalAlignment(SwingConstants.CENTER);
+        
         JPanel contentPanel = new JPanel(new GridBagLayout());
         contentPanel.setOpaque(false);
         GridBagConstraints c = new GridBagConstraints();
