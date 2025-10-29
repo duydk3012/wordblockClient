@@ -16,7 +16,7 @@ public class LoginFrame extends JFrame {
     public LoginFrame() {
         super("WordBlock – Login");
 
-        // Khởi tạo kết nối
+        // Kết nối tới server
         net = new NetworkClient("172.11.76.61", 5000);
         // net = new NetworkClient("localhost", 5000);
         boolean ok = net.connect();
@@ -31,38 +31,68 @@ public class LoginFrame extends JFrame {
         }
 
         net.setOnMessage(this::onServer);
-
-        // Khởi tạo giao diện
         initUI();
     }
 
-    /** Giao diện */
+    /** ======================= GIAO DIỆN ======================= */
     private void initUI() {
         Font emojiFont = new Font("Segoe UI Emoji", Font.PLAIN, 14);
 
-        JPanel pn = new JPanel(new GridBagLayout());
+        ImageIcon bgIcon = new ImageIcon("C:/Users/duydk/Downloads/code/wordblockClient/assets/img/bg_login.jpg");
+
+        JPanel bgPanel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                g.drawImage(bgIcon.getImage(), 0, 0, getWidth(), getHeight(), this);
+            }
+        };
+        bgPanel.setLayout(new GridBagLayout());
+
+        JPanel contentPanel = new JPanel(new GridBagLayout());
+        contentPanel.setOpaque(false);
         GridBagConstraints c = new GridBagConstraints();
         c.insets = new Insets(6, 6, 6, 6);
         c.anchor = GridBagConstraints.WEST;
 
         JLabel lbUser = new JLabel("👤 Username:");
         lbUser.setFont(emojiFont);
+        lbUser.setForeground(Color.BLACK);
+
         JLabel lbPass = new JLabel("🔒 Password:");
         lbPass.setFont(emojiFont);
+        lbPass.setForeground(Color.BLACK);
+
         tfUser.setFont(emojiFont);
         tfPass.setFont(emojiFont);
 
-        c.gridx = 0; c.gridy = 0; pn.add(lbUser, c);
-        c.gridx = 1; pn.add(tfUser, c);
-        c.gridx = 0; c.gridy = 1; pn.add(lbPass, c);
-        c.gridx = 1; pn.add(tfPass, c);
+        c.gridx = 0; c.gridy = 0; contentPanel.add(lbUser, c);
+        c.gridx = 1; contentPanel.add(tfUser, c);
+        c.gridx = 0; c.gridy = 1; contentPanel.add(lbPass, c);
+        c.gridx = 1; contentPanel.add(tfPass, c);
 
         JButton btLogin = new JButton("🔑 Login");
         JButton btReg = new JButton("📝 Register");
         btLogin.setFont(emojiFont);
         btReg.setFont(emojiFont);
 
-        // Sự kiện Login
+        JPanel south = new JPanel();
+        south.setOpaque(false);
+        south.add(btReg);
+        south.add(btLogin);
+
+        c.gridx = 0; c.gridy = 2; c.gridwidth = 2;
+        c.anchor = GridBagConstraints.CENTER;
+        contentPanel.add(south, c);
+
+        bgPanel.add(contentPanel);
+
+        setContentPane(bgPanel);
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setResizable(false);
+        setSize(450, 300);
+        setLocationRelativeTo(null);
+
         btLogin.addActionListener(e -> {
             net.send("login", Map.of(
                     "username", tfUser.getText().trim(),
@@ -70,28 +100,15 @@ public class LoginFrame extends JFrame {
             ));
         });
 
-        // Sự kiện mở RegisterFrame thay vì gửi trực tiếp
         btReg.addActionListener(e -> {
             new RegisterFrame(net).setVisible(true);
             dispose();
         });
 
-        JPanel south = new JPanel();
-        south.add(btReg);
-        south.add(btLogin);
-
-        setLayout(new BorderLayout());
-        add(pn, BorderLayout.CENTER);
-        add(south, BorderLayout.SOUTH);
-
-        setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setResizable(false);
-        pack();
-        setLocationRelativeTo(null);
         setVisible(true);
     }
 
-    /** Xử lý thông điệp từ server */
+    /** ======================= XỬ LÝ SERVER ======================= */
     private void onServer(String line) {
         SwingUtilities.invokeLater(() -> {
             try {
@@ -109,7 +126,7 @@ public class LoginFrame extends JFrame {
                         } else {
                             JOptionPane.showMessageDialog(
                                     this,
-                                    payload.get("message").toString(),
+                                    payload.get("message").getAsString(),
                                     "Login Failed",
                                     JOptionPane.WARNING_MESSAGE
                             );
@@ -121,5 +138,9 @@ public class LoginFrame extends JFrame {
                 System.err.println("Error parsing server message: " + ex.getMessage());
             }
         });
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(LoginFrame::new);
     }
 }
