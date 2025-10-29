@@ -12,7 +12,7 @@ import java.util.Timer;
 public class GameFrame extends JFrame {
     private final NetworkClient net;
     private final String me, opponent, roomId;
-    private final JLabel lblPlayer1, lblPlayer2, lblTimer, lblScore1, lblScore2;
+    private JLabel lblPlayer1, lblPlayer2, lblTimer, lblScore1, lblScore2;
     private final JTextField txtInput = new JTextField(32);
     private final JButton btnSubmit = new JButton("Submit");
     private final JButton btnExit = new JButton("Exit");
@@ -48,9 +48,19 @@ public class GameFrame extends JFrame {
                 onExit();
             }
         });
+
+        initUI(durationSec);
+        initEvents();
+
+        net.setOnMessage(this::onServer);
+        setVisible(true);
+    }
+
+    /** ====================== UI SETUP ====================== */
+    private void initUI(int durationSec) {
         setLayout(new BorderLayout(10, 10));
 
-        // === Header ===
+        // === HEADER ===
         JPanel topPanel = new JPanel(new GridLayout(2, 3, 10, 5));
         lblPlayer1 = new JLabel("👤 " + me, SwingConstants.CENTER);
         lblPlayer2 = new JLabel(opponent + " 👤", SwingConstants.CENTER);
@@ -58,8 +68,9 @@ public class GameFrame extends JFrame {
         lblScore1 = new JLabel("Score: 0", SwingConstants.CENTER);
         lblScore2 = new JLabel("Score: 0", SwingConstants.CENTER);
 
-        lblPlayer1.setFont(new Font("Segoe UI Emoji", Font.BOLD, 14));
-        lblPlayer2.setFont(new Font("Segoe UI Emoji", Font.BOLD, 14));
+        Font headerFont = new Font("Segoe UI Emoji", Font.BOLD, 14);
+        lblPlayer1.setFont(headerFont);
+        lblPlayer2.setFont(headerFont);
         lblTimer.setFont(new Font("Segoe UI Emoji", Font.BOLD, 16));
 
         topPanel.add(lblPlayer1);
@@ -70,7 +81,7 @@ public class GameFrame extends JFrame {
         topPanel.add(lblScore2);
         add(topPanel, BorderLayout.NORTH);
 
-        // === Letters ===
+        // === LETTERS PANEL ===
         lettersPanel.setLayout(new GridLayout(2, 4, 5, 5));
         for (char c : letters.toCharArray()) {
             JLabel lbl = new JLabel(String.valueOf(c).toUpperCase(), SwingConstants.CENTER);
@@ -80,12 +91,13 @@ public class GameFrame extends JFrame {
         }
         add(lettersPanel, BorderLayout.CENTER);
 
-        // === Word list (right) ===
+        // === WORD LIST (RIGHT SIDE) ===
         lstWords.setBorder(BorderFactory.createTitledBorder("Valid Words"));
+        lstWords.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 13));
         scrollRight.setPreferredSize(new Dimension(200, 0));
         add(scrollRight, BorderLayout.EAST);
 
-        // === Input (bottom) ===
+        // === INPUT AREA (BOTTOM) ===
         JPanel bottomPanel = new JPanel(new BorderLayout());
         JPanel inputPanel = new JPanel();
         inputPanel.add(new JLabel("Enter word:"));
@@ -99,20 +111,17 @@ public class GameFrame extends JFrame {
         bottomPanel.add(inputPanel, BorderLayout.CENTER);
         bottomPanel.add(lblStatus, BorderLayout.SOUTH);
         add(bottomPanel, BorderLayout.SOUTH);
+    }
 
-        // === Event ===
+    /** ====================== EVENTS ====================== */
+    private void initEvents() {
         btnSubmit.addActionListener(this::onSubmit);
         btnExit.addActionListener(e -> onExit());
         txtInput.addActionListener(e -> btnSubmit.doClick());
-
         SwingUtilities.invokeLater(() -> txtInput.requestFocusInWindow());
-
-        // === Socket listener ===
-        net.setOnMessage(this::onServer);
-
-        setVisible(true);
     }
 
+    /** ====================== LOGIC ====================== */
     private void onSubmit(ActionEvent e) {
         String word = txtInput.getText().trim();
         if (word.isEmpty()) return;
@@ -148,16 +157,11 @@ public class GameFrame extends JFrame {
                         boolean ok = p.get("accepted").getAsBoolean();
                         if (ok) {
                             wordListModel.addElement(lastSubmittedWord);
-                            int lastIndex = wordListModel.size() - 1;
-                            if (lastIndex >= 0) lstWords.ensureIndexIsVisible(lastIndex);
-                            lblStatus.setForeground(new Color(0, 128, 0));
-                            lblStatus.setText("✅ Valid word: " + lastSubmittedWord);
+                            lstWords.ensureIndexIsVisible(wordListModel.size() - 1);
+                            showStatus("✅ Valid word: " + lastSubmittedWord, new Color(0, 128, 0));
                         } else {
-                            lblStatus.setForeground(Color.RED);
-                            lblStatus.setText("❌ Invalid word: " + lastSubmittedWord);
+                            showStatus("❌ Invalid word: " + lastSubmittedWord, Color.RED);
                         }
-
-                        new javax.swing.Timer(3000, ev -> lblStatus.setText(" ")).start();
                     }
 
                     case "game_end" -> {
@@ -173,6 +177,20 @@ public class GameFrame extends JFrame {
                 System.err.println("Error parsing message: " + ex.getMessage());
             }
         });
+    }
+
+    private void showStatus(String message, Color color) {
+        lblStatus.setForeground(color);
+        lblStatus.setText(message);
+
+        // Mỗi thông báo có timer riêng, không bị ghi đè
+        Timer timer = new Timer();
+        timer.schedule(new java.util.TimerTask() {
+            @Override
+            public void run() {
+                SwingUtilities.invokeLater(() -> lblStatus.setText(" "));
+            }
+        }, 3000);
     }
 
     private void updateScores(JsonObject scores) {

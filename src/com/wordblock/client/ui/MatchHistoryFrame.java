@@ -1,14 +1,4 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.wordblock.client.ui;
-
-/**
- *
- * @author duydk
- */
-
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -17,8 +7,8 @@ import java.util.List;
 import java.util.Map;
 
 public class MatchHistoryFrame extends JFrame {
-    private final JTable table;
-    private final DefaultTableModel model;
+    private JTable table;
+    private DefaultTableModel model;
 
     public MatchHistoryFrame(List<Map<String, Object>> matches) {
         setTitle("Match History");
@@ -26,10 +16,15 @@ public class MatchHistoryFrame extends JFrame {
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
-        String[] cols = {"Player 1", "Player 2", "Score 1", "Score 2", "Result", "Started", "Ended"};
-        model = new DefaultTableModel(cols, 0) {
+        initUI(matches);
+    }
+
+    /** Initialize UI components */
+    private void initUI(List<Map<String, Object>> matches) {
+        String[] columns = {"Player 1", "Player 2", "Score 1", "Score 2", "Result", "Started", "Ended"};
+        model = new DefaultTableModel(columns, 0) {
             @Override
-            public boolean isCellEditable(int row, int column) {
+            public boolean isCellEditable(int row, int col) {
                 return false;
             }
         };
@@ -41,13 +36,14 @@ public class MatchHistoryFrame extends JFrame {
         table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 13));
         table.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 13));
 
-        JScrollPane scroll = new JScrollPane(table);
-        scroll.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        add(scroll, BorderLayout.CENTER);
+        JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
+        add(scrollPane, BorderLayout.CENTER);
         updateTable(matches);
     }
 
+    /** Fill table with match data */
     private void updateTable(List<Map<String, Object>> matches) {
         model.setRowCount(0);
 
@@ -57,30 +53,32 @@ public class MatchHistoryFrame extends JFrame {
         }
 
         for (Map<String, Object> m : matches) {
-            String p1 = (String) m.get("player1");
-            String p2 = (String) m.get("player2");
+            String player1 = (String) m.get("player1");
+            String player2 = (String) m.get("player2");
 
-            int s1 = toInt(m.get("score1"));
-            int s2 = toInt(m.get("score2"));
+            int score1 = toInt(m.get("score1"));
+            int score2 = toInt(m.get("score2"));
 
             String result;
-            if (s1 > s2) result = p1 + " 🏆";
-            else if (s1 < s2) result = p2 + " 🏆";
+            if (score1 > score2) result = player1 + " 🏆";
+            else if (score1 < score2) result = player2 + " 🏆";
             else result = "🤝 Draw";
 
             Object started = m.getOrDefault("started_at", "-");
             Object ended = m.getOrDefault("ended_at", "-");
 
-            model.addRow(new Object[]{p1, p2, s1, s2, result, started, ended});
+            model.addRow(new Object[]{player1, player2, score1, score2, result, started, ended});
         }
     }
 
+    /** Safely convert object to int */
     private int toInt(Object obj) {
         if (obj == null) return 0;
-        if (obj instanceof Integer) return (Integer) obj;
-        if (obj instanceof Double) return ((Double) obj).intValue();
+        if (obj instanceof Number) return ((Number) obj).intValue();
         if (obj instanceof String) {
-            try { return Integer.parseInt((String) obj); } catch (NumberFormatException ignored) {}
+            try {
+                return Integer.parseInt((String) obj);
+            } catch (NumberFormatException ignored) {}
         }
         return 0;
     }

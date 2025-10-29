@@ -16,8 +16,9 @@ public class LoginFrame extends JFrame {
     public LoginFrame() {
         super("WordBlock – Login");
 
+        // Khởi tạo kết nối
         net = new NetworkClient("172.11.76.61", 5000);
-//        net = new NetworkClient("localhost", 5000);
+        // net = new NetworkClient("localhost", 5000);
         boolean ok = net.connect();
         if (!ok) {
             JOptionPane.showMessageDialog(
@@ -31,7 +32,12 @@ public class LoginFrame extends JFrame {
 
         net.setOnMessage(this::onServer);
 
-        // Use font that supports emojis
+        // Khởi tạo giao diện
+        initUI();
+    }
+
+    /** Giao diện */
+    private void initUI() {
         Font emojiFont = new Font("Segoe UI Emoji", Font.PLAIN, 14);
 
         JPanel pn = new JPanel(new GridBagLayout());
@@ -56,6 +62,7 @@ public class LoginFrame extends JFrame {
         btLogin.setFont(emojiFont);
         btReg.setFont(emojiFont);
 
+        // Sự kiện Login
         btLogin.addActionListener(e -> {
             net.send("login", Map.of(
                     "username", tfUser.getText().trim(),
@@ -63,14 +70,10 @@ public class LoginFrame extends JFrame {
             ));
         });
 
+        // Sự kiện mở RegisterFrame thay vì gửi trực tiếp
         btReg.addActionListener(e -> {
-            new RegisterFrame(net);
+            new RegisterFrame(net).setVisible(true);
             dispose();
-            
-//            net.send("register", Map.of(
-//                    "username", tfUser.getText().trim(),
-//                    "password", new String(tfPass.getPassword())
-//            ));
         });
 
         JPanel south = new JPanel();
@@ -88,6 +91,7 @@ public class LoginFrame extends JFrame {
         setVisible(true);
     }
 
+    /** Xử lý thông điệp từ server */
     private void onServer(String line) {
         SwingUtilities.invokeLater(() -> {
             try {
@@ -96,16 +100,6 @@ public class LoginFrame extends JFrame {
                 JsonObject payload = obj.getAsJsonObject("payload");
 
                 switch (type) {
-                    case "register_result" -> {
-                        boolean ok = payload.get("success").getAsBoolean();
-                        JOptionPane.showMessageDialog(
-                                this,
-                                ok ? "✅ Registration successful!" : "❌ Registration failed.",
-                                "Register",
-                                ok ? JOptionPane.INFORMATION_MESSAGE : JOptionPane.ERROR_MESSAGE
-                        );
-                    }
-
                     case "login_result" -> {
                         boolean ok = payload.get("success").getAsBoolean();
                         if (ok) {
@@ -115,16 +109,13 @@ public class LoginFrame extends JFrame {
                         } else {
                             JOptionPane.showMessageDialog(
                                     this,
-                                    "⚠️ Invalid username or password.",
+                                    payload.get("message").toString(),
                                     "Login Failed",
                                     JOptionPane.WARNING_MESSAGE
                             );
                         }
                     }
-
-                    default -> {
-                        // Ignore other message types
-                    }
+                    default -> { /* Ignore others */ }
                 }
             } catch (Exception ex) {
                 System.err.println("Error parsing server message: " + ex.getMessage());

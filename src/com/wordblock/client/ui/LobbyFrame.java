@@ -31,7 +31,19 @@ public class LobbyFrame extends JFrame {
         this.net = net;
         this.username = username;
 
-        // === Frame configuration ===
+        initUI();
+        initActions();
+
+        // === Register server callback ===
+        net.setOnMessage(this::onServer);
+
+        // === Initial requests ===
+        net.send("list_online", Map.of());
+        net.send("leaderboard_request", Map.of());
+    }
+
+    /** ---------------- UI setup ---------------- */
+    private void initUI() {
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setSize(700, 480);
         setLocationRelativeTo(null);
@@ -72,7 +84,11 @@ public class LobbyFrame extends JFrame {
         split.setDividerLocation(350);
         add(split, BorderLayout.CENTER);
 
-        // === Button actions ===
+        setVisible(true);
+    }
+
+    /** ---------------- Button + List actions ---------------- */
+    private void initActions() {
         btnRefresh.addActionListener(e -> {
             net.send("list_online", Map.of());
             net.send("leaderboard_request", Map.of());
@@ -96,7 +112,6 @@ public class LobbyFrame extends JFrame {
 
         btnHistory.addActionListener(e -> net.send(Map.of("type", "match_history", "payload", Map.of())));
 
-        // === Double-click on online list to challenge ===
         lstOnline.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -104,7 +119,6 @@ public class LobbyFrame extends JFrame {
                     String selected = lstOnline.getSelectedValue();
                     if (selected == null) return;
 
-                    // Extract player name from "Alice (Online)"
                     String target = selected.split(" ")[0].trim();
                     if (target.equalsIgnoreCase(username)) {
                         JOptionPane.showMessageDialog(LobbyFrame.this, "⚠️ You cannot challenge yourself!");
@@ -127,17 +141,9 @@ public class LobbyFrame extends JFrame {
                 }
             }
         });
-
-        // === Register server callback ===
-        net.setOnMessage(this::onServer);
-
-        // === Initial requests ===
-        net.send("list_online", Map.of());
-        net.send("leaderboard_request", Map.of());
-
-        setVisible(true);
     }
 
+    /** ---------------- Handle messages from server ---------------- */
     private void onServer(String line) {
         SwingUtilities.invokeLater(() -> {
             try {
