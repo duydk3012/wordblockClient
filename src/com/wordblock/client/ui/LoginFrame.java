@@ -16,7 +16,8 @@ public class LoginFrame extends JFrame {
     public LoginFrame() {
         super("WordBlock – Login");
 
-        net = new NetworkClient("localhost", 5000);
+        net = new NetworkClient("172.11.76.61", 5000);
+//        net = new NetworkClient("localhost", 5000);
         boolean ok = net.connect();
         if (!ok) {
             JOptionPane.showMessageDialog(
@@ -63,10 +64,13 @@ public class LoginFrame extends JFrame {
         });
 
         btReg.addActionListener(e -> {
-            net.send("register", Map.of(
-                    "username", tfUser.getText().trim(),
-                    "password", new String(tfPass.getPassword())
-            ));
+            new RegisterFrame(net);
+            dispose();
+            
+//            net.send("register", Map.of(
+//                    "username", tfUser.getText().trim(),
+//                    "password", new String(tfPass.getPassword())
+//            ));
         });
 
         JPanel south = new JPanel();

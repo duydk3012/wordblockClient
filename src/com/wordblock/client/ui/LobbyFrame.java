@@ -87,6 +87,7 @@ public class LobbyFrame extends JFrame {
             );
             if (opt == JOptionPane.YES_OPTION) {
                 dispose();
+                net.send("logout", Map.of());
                 new LoginFrame().setVisible(true);
             }
         });
