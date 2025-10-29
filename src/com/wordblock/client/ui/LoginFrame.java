@@ -38,7 +38,7 @@ public class LoginFrame extends JFrame {
     private void initUI() {
         Font emojiFont = new Font("Segoe UI Emoji", Font.PLAIN, 14);
 
-        ImageIcon bgIcon = new ImageIcon("C:/Users/duydk/Downloads/code/wordblockClient/assets/img/bg_login.jpg");
+        ImageIcon bgIcon = new ImageIcon("assets/img/bg_login.jpg");
 
         JPanel bgPanel = new JPanel() {
             @Override
