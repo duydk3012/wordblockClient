@@ -17,8 +17,8 @@ public class LoginFrame extends JFrame {
         super("WordBlock – Login");
 
         // Kết nối tới server
-        net = new NetworkClient("172.11.76.61", 5000);
-        // net = new NetworkClient("localhost", 5000);
+//        net = new NetworkClient("172.11.76.61", 5000);
+        net = new NetworkClient("localhost", 5000);
         boolean ok = net.connect();
         if (!ok) {
             JOptionPane.showMessageDialog(
@@ -38,6 +38,7 @@ public class LoginFrame extends JFrame {
     private void initUI() {
         Font emojiFont = new Font("Segoe UI Emoji", Font.PLAIN, 14);
 
+        // Ảnh nền
         ImageIcon bgIcon = new ImageIcon("assets/img/bg_login.jpg");
 
         JPanel bgPanel = new JPanel() {
@@ -49,15 +50,20 @@ public class LoginFrame extends JFrame {
         };
         bgPanel.setLayout(new GridBagLayout());
 
-        JLabel title = new JLabel("WORD BLOCK");
-        title.setFont(new Font("Segoe UI Black", Font.BOLD, 26));
-        title.setForeground(Color.BLACK);
-        title.setHorizontalAlignment(SwingConstants.CENTER);
-        
+        // ===== LOGO GAME =====
+        ImageIcon logoIcon = new ImageIcon(
+                new ImageIcon("assets/img/gamelogo.png")
+                        .getImage()
+                        .getScaledInstance(300, 80, Image.SCALE_SMOOTH)
+        );
+        JLabel logoLabel = new JLabel(logoIcon);
+        logoLabel.setHorizontalAlignment(SwingConstants.CENTER);
+
+        // ===== FORM LOGIN =====
         JPanel contentPanel = new JPanel(new GridBagLayout());
         contentPanel.setOpaque(false);
         GridBagConstraints c = new GridBagConstraints();
-        c.insets = new Insets(6, 6, 6, 6);
+        c.insets = new Insets(8, 8, 8, 8);
         c.anchor = GridBagConstraints.WEST;
 
         JLabel lbUser = new JLabel("👤 Username:");
@@ -90,14 +96,21 @@ public class LoginFrame extends JFrame {
         c.anchor = GridBagConstraints.CENTER;
         contentPanel.add(south, c);
 
-        bgPanel.add(contentPanel);
+        // ===== BỐ CỤC TỔNG =====
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.setOpaque(false);
+        wrapper.add(logoLabel, BorderLayout.NORTH);
+        wrapper.add(contentPanel, BorderLayout.CENTER);
+
+        bgPanel.add(wrapper);
 
         setContentPane(bgPanel);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setResizable(false);
-        setSize(450, 300);
+        setSize(400, 300);
         setLocationRelativeTo(null);
 
+        // ===== SỰ KIỆN NÚT =====
         btLogin.addActionListener(e -> {
             net.send("login", Map.of(
                     "username", tfUser.getText().trim(),
@@ -112,6 +125,7 @@ public class LoginFrame extends JFrame {
 
         setVisible(true);
     }
+
 
     /** ======================= XỬ LÝ SERVER ======================= */
     private void onServer(String line) {
@@ -143,9 +157,5 @@ public class LoginFrame extends JFrame {
                 System.err.println("Error parsing server message: " + ex.getMessage());
             }
         });
-    }
-
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(LoginFrame::new);
     }
 }
